@@ -3,13 +3,14 @@ import SwiftUI
 
 struct SwipeCard: View {
     let asset: PHAsset
-    let onDecide: (DayDeck.Decision) -> Void
+    let onDecide: (SwipeSession.Decision) -> Void
     @State private var offset: CGSize = .zero
 
     var body: some View {
         GeometryReader { geo in
             AssetImage(asset: asset)
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay { tint }
                 .overlay(alignment: .bottomLeading) { caption }
                 .overlay { stamp }
                 .offset(offset)
@@ -27,7 +28,7 @@ struct SwipeCard: View {
         }
     }
 
-    private func fling(_ decision: DayDeck.Decision, width: CGFloat) {
+    private func fling(_ decision: SwipeSession.Decision, width: CGFloat) {
         withAnimation(.easeOut(duration: 0.2)) {
             offset.width = (decision == .keep ? 1 : -1) * width * 1.5
         }
@@ -55,11 +56,20 @@ struct SwipeCard: View {
         let progress = min(abs(offset.width) / 120, 1)
         let keep = offset.width > 0
         return Text(keep ? "KEEP" : "DELETE")
-            .font(.system(size: 40, weight: .heavy))
+            .font(.system(size: 32 + progress * 24, weight: .heavy))
             .foregroundStyle(keep ? .green : .red)
             .padding(.horizontal, 16).padding(.vertical, 6)
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(keep ? .green : .red, lineWidth: 5))
             .rotationEffect(.degrees(keep ? -15 : 15))
             .opacity(progress)
+    }
+
+    private var tint: some View {
+        let progress = min(abs(offset.width) / 120, 1)
+        let keep = offset.width > 0
+        return RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .fill(keep ? Color.green : Color.red)
+            .opacity(progress * 0.35)
+            .allowsHitTesting(false)
     }
 }

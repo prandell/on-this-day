@@ -2,7 +2,7 @@ import Photos
 import SwiftUI
 
 struct ReviewView: View {
-    @ObservedObject var deck: DayDeck
+    @ObservedObject var deck: SwipeSession
     @Environment(\.dismiss) private var dismiss
     @State private var deleting = false
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 4)]
@@ -16,7 +16,7 @@ struct ReviewView: View {
                     .padding()
                 LazyVGrid(columns: columns, spacing: 4) {
                     ForEach(deck.marked, id: \.localIdentifier) { asset in
-                        AssetImage(asset: asset)
+                        AssetImage(asset: asset, isFrontCard: false)
                             .aspectRatio(1, contentMode: .fit)
                             .clipped()
                             .onTapGesture { withAnimation { deck.unmark(asset) } }

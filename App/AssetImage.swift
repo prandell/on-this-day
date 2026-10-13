@@ -3,29 +3,34 @@ import SwiftUI
 
 struct AssetImage: View {
     let asset: PHAsset
+    var isFrontCard: Bool = true
     @Environment(\.displayScale) private var scale
     @State private var image: UIImage?
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color(.secondarySystemBackground)
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
-                } else {
-                    ProgressView()
+        if asset.mediaType == .video {
+            VideoAssetView(asset: asset, isFrontCard: isFrontCard)
+        } else {
+            GeometryReader { geo in
+                ZStack {
+                    Color(.secondarySystemBackground)
+                    if let image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .task(id: asset.localIdentifier) {
+                    let size = CGSize(width: max(geo.size.width, 200) * scale, height: max(geo.size.height, 200) * scale)
+                    image = await ImageLoader.image(for: asset, size: size)
                 }
             }
-            .task(id: asset.localIdentifier) {
-                let size = CGSize(width: max(geo.size.width, 200) * scale, height: max(geo.size.height, 200) * scale)
-                image = await ImageLoader.image(for: asset, size: size)
-            }
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
     }
 }
 
