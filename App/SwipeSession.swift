@@ -25,7 +25,7 @@ enum SessionKind: Hashable {
         case .onThisDay: return "On This Day"
         case .recents: return "Recents"
         case .random: return "Random"
-        case .month(let date): return Self.monthTitleFormatter.string(from: date)
+        case .month(let date): return Self.monthTitleFormatter.string(from: date).uppercased()
         case .bookmarked: return "Bookmarked"
         }
     }
@@ -37,7 +37,7 @@ enum SessionKind: Hashable {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM"; return f
     }()
     private static let monthTitleFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "MMMM yyyy"; return f
+        let f = DateFormatter(); f.dateFormat = "MMM ''yy"; return f
     }()
 }
 
@@ -58,9 +58,9 @@ final class SwipeSession: ObservableObject {
     /// Photos you swiped right on stay hidden on later visits to On This Day unless "Show photos I kept" is on.
     private nonisolated static let keptKey = "keptAssetIDs"
     private nonisolated static let bookmarkedKey = "bookmarkedAssetIDs"
-    private static let showKeptKey = "showKept"
+    private nonisolated static let showKeptKey = "showKept"
 
-    static var showKept: Bool {
+    nonisolated static var showKept: Bool {
         get { UserDefaults.standard.bool(forKey: showKeptKey) }
         set { UserDefaults.standard.set(newValue, forKey: showKeptKey) }
     }
@@ -75,6 +75,13 @@ final class SwipeSession: ObservableObject {
     nonisolated static var kept: Set<String> {
         get { Set(UserDefaults.standard.stringArray(forKey: keptKey) ?? []) }
         set { UserDefaults.standard.set(Array(newValue), forKey: keptKey) }
+    }
+
+    /// Cumulative space freed across every session ever, shown on the summary screen's "saved all-time" line.
+    private nonisolated static let allTimeFreedBytesKey = "allTimeFreedBytes"
+    nonisolated static var allTimeFreedBytes: Int64 {
+        get { Int64(UserDefaults.standard.integer(forKey: allTimeFreedBytesKey)) }
+        set { UserDefaults.standard.set(Int(newValue), forKey: allTimeFreedBytesKey) }
     }
 
     init(kind: SessionKind) { self.kind = kind }
@@ -182,6 +189,14 @@ final class SwipeSession: ObservableObject {
         persist()
     }
 
+    /// Opposite of `unmark`: moves a kept-but-undecided-delete asset back to delete-marked, from the review grid.
+    func remark(_ asset: PHAsset) {
+        guard let i = history.firstIndex(where: { $0.asset.localIdentifier == asset.localIdentifier }) else { return }
+        history[i].decision = .delete
+        removeKept(asset.localIdentifier)
+        persist()
+    }
+
     private func addKept(_ id: String) {
         var set = Self.kept; set.insert(id); Self.kept = set
     }
@@ -216,7 +231,12 @@ final class SwipeSession: ObservableObject {
             bookmarks.subtract(ids)
             Self.bookmarked = bookmarks
             deletedCount += targets.count
-            if batchFreed > 0 { freedBytes += batchFreed } else { freedBytesUnavailable = true }
+            if batchFreed > 0 {
+                freedBytes += batchFreed
+                Self.allTimeFreedBytes += batchFreed
+            } else {
+                freedBytesUnavailable = true
+            }
             persist()
             WidgetCenter.shared.reloadAllTimelines()
             return true

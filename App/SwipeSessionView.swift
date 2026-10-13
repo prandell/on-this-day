@@ -5,9 +5,11 @@ struct SwipeSessionView: View {
     let kind: SessionKind
     @StateObject private var deck: SwipeSession
     @State private var showReview = false
+    @State private var showDatePicker = false
     @State private var shareURL: ShareURL?
     @State private var favoriteOverrides: [String: Bool] = [:]
     @State private var sessionResult: SessionResult?
+    @State private var dragAmount: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
 
     init(kind: SessionKind) {
@@ -16,27 +18,32 @@ struct SwipeSessionView: View {
     }
 
     var body: some View {
-        Group {
-            if deck.hasAccess { deckView }
-            else if deck.authorization == .notDetermined { ProgressView() }
-            else { deniedView }
-        }
-        .navigationTitle(kind.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if case .onThisDay = kind {
-                ToolbarItem(placement: .topBarLeading) {
-                    DatePicker("Date", selection: $deck.date, displayedComponents: .date).labelsHidden()
-                }
+        ZStack {
+            backgroundTint.ignoresSafeArea()
+            Group {
+                if deck.hasAccess { deckView }
+                else if deck.authorization == .notDetermined { ProgressView().tint(.white) }
+                else { deniedView }
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showReview) { ReviewView(deck: deck) }
         .sheet(item: $shareURL) { item in ShareSheet(items: [item.url]) }
+        .sheet(isPresented: $showDatePicker) {
+            datePickerSheet
+        }
         .fullScreenCover(item: $sessionResult) { result in
             SessionSummaryView(result: result, categoryTitle: kind.title, onBackToCategory: backToCategory, onReturnHome: returnHome)
         }
         .task { await deck.start() }
         .onChange(of: deck.history.count) { checkCompletion() }
+        .preferredColorScheme(.dark)
+    }
+
+    private var backgroundTint: Color {
+        if dragAmount > 0 { return Theme.keepColor.opacity(Double(dragAmount) * 0.3) }
+        if dragAmount < 0 { return Theme.deleteColor.opacity(Double(-dragAmount) * 0.3) }
+        return Theme.background
     }
 
     /// R7: once the queue is exhausted *and* any pending deletions have been confirmed via Review, show the summary.
@@ -45,7 +52,8 @@ struct SwipeSessionView: View {
         sessionResult = SessionResult(
             keptCount: deck.keptCount,
             deletedCount: deck.deletedCount,
-            freedBytes: deck.freedBytesUnavailable ? nil : deck.freedBytes
+            freedBytes: deck.freedBytesUnavailable ? nil : deck.freedBytes,
+            allTimeFreedBytes: SwipeSession.allTimeFreedBytes
         )
     }
 
@@ -63,28 +71,35 @@ struct SwipeSessionView: View {
     }
 
     private var deckView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
+            header
             if deck.isLoading {
-                Spacer(); ProgressView("Finding photos…"); Spacer()
+                Spacer(); ProgressView().tint(.white); Spacer()
             } else if let asset = deck.current {
-                Text("\(deck.remaining) left").font(.subheadline).foregroundStyle(.secondary)
-                HStack(alignment: .center, spacing: 12) {
-                    ZStack {
-                        if let next = deck.next {
-                            AssetImage(asset: next, isFrontCard: false)
-                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                                .scaleEffect(0.94)
-                                .opacity(0.5)
-                        }
-                        SwipeCard(asset: asset) { decision in
-                            withAnimation { deck.decide(decision) }
-                        }
-                        .id(asset.localIdentifier)
+                ZStack {
+                    if let next = deck.next {
+                        AssetImage(asset: next, isFrontCard: false)
+                            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                            .scaleEffect(0.94)
+                            .opacity(0.5)
+                            .padding(.horizontal, 2)
                     }
+                    SwipeCard(asset: asset, onDecide: { decision in withAnimation { deck.decide(decision) } }, dragAmount: $dragAmount)
+                        .id(asset.localIdentifier)
                     actionStack(for: asset)
                 }
-                .padding(.horizontal)
-                controls
+                .padding(.horizontal, 2)
+                Spacer(minLength: 12)
+                keepDeleteRow
+                if !deck.marked.isEmpty {
+                    Button { showReview = true } label: {
+                        Label("Review \(deck.marked.count)", systemImage: "trash")
+                            .font(.system(.subheadline, design: .rounded).weight(.bold))
+                    }
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(.top, 10)
+                }
+                Spacer(minLength: 16)
             } else {
                 Spacer()
                 ContentUnavailableView(
@@ -92,44 +107,108 @@ struct SwipeSessionView: View {
                     systemImage: deck.assets.isEmpty ? "photo.on.rectangle" : "checkmark.circle",
                     description: Text(deck.assets.isEmpty ? "No photos found for this category." : "You've been through everything.")
                 )
+                .foregroundStyle(.white)
                 Spacer()
             }
+        }
+    }
 
-            if !deck.marked.isEmpty {
-                Button { showReview = true } label: {
-                    Label("Review \(deck.marked.count) to delete", systemImage: "trash")
-                        .frame(maxWidth: .infinity)
+    private var header: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(.white.opacity(0.12)))
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .controlSize(.large)
-                .padding(.horizontal)
+                Spacer()
+                if case .onThisDay = kind {
+                    Button { showDatePicker = true } label: {
+                        Text(headerDateText)
+                            .font(.system(.title3, design: .rounded).weight(.heavy))
+                            .foregroundStyle(.white)
+                    }
+                }
+                Spacer()
+                Button { deck.undo() } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(deck.history.isEmpty ? .white.opacity(0.3) : .white)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(.white.opacity(0.12)))
+                }
+                .disabled(deck.history.isEmpty)
+            }
+            Text(progressText)
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+    }
+
+    private var headerDateText: String {
+        deck.date.formatted(.dateTime.month(.abbreviated).day()).uppercased()
+    }
+
+    private var progressText: String {
+        let total = deck.assets.count
+        guard total > 0 else { return "" }
+        let done = deck.history.count
+        let percent = Int((Double(done) / Double(total) * 100).rounded())
+        return "\(done)/\(total) · \(percent)%"
+    }
+
+    private var datePickerSheet: some View {
+        NavigationStack {
+            DatePicker("Date", selection: Binding(get: { deck.date }, set: { deck.date = $0 }), displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .padding()
+                .navigationTitle("Choose a date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { showDatePicker = false } }
+                }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private var keepDeleteRow: some View {
+        HStack {
+            Button { withAnimation { deck.decide(.delete) } } label: {
+                Text("DELETE")
+                    .font(.system(.title2, design: .rounded).weight(.heavy))
+                    .foregroundStyle(Theme.deleteColor.opacity(dragAmount < 0 ? 1 : 0.55))
+            }
+            Spacer()
+            Button { withAnimation { deck.decide(.keep) } } label: {
+                Text("KEEP")
+                    .font(.system(.title2, design: .rounded).weight(.heavy))
+                    .foregroundStyle(Theme.keepColor.opacity(dragAmount > 0 ? 1 : 0.55))
             }
         }
-        .padding(.vertical)
+        .padding(.horizontal, 28)
     }
 
     private func actionStack(for asset: PHAsset) -> some View {
-        VStack(spacing: 20) {
-            actionButton(isFavorite(asset) ? "heart.fill" : "heart", tint: .pink) {
-                toggleFavorite(asset)
-            }
-            actionButton("square.and.arrow.up", tint: .blue) {
-                share(asset)
-            }
-            actionButton(deck.isBookmarked(asset) ? "bookmark.fill" : "bookmark", tint: .orange) {
-                deck.toggleBookmark(asset)
-            }
+        VStack(spacing: 22) {
+            actionButton(isFavorite(asset) ? "heart.fill" : "heart") { toggleFavorite(asset) }
+            actionButton(deck.isBookmarked(asset) ? "bookmark.fill" : "bookmark") { deck.toggleBookmark(asset) }
+            actionButton("square.and.arrow.up") { share(asset) }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+        .padding(.trailing, 20)
     }
 
-    private func actionButton(_ symbol: String, tint: Color, action: @escaping () -> Void) -> some View {
+    private func actionButton(_ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(Color(.secondarySystemBackground)))
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.4), radius: 4)
         }
     }
 
@@ -155,30 +234,13 @@ struct SwipeSessionView: View {
         }
     }
 
-    private var controls: some View {
-        HStack(spacing: 36) {
-            roundButton("xmark", .red) { withAnimation { deck.decide(.delete) } }
-            roundButton("arrow.uturn.backward", .gray) { withAnimation { deck.undo() } }
-                .disabled(deck.history.isEmpty)
-            roundButton("heart.fill", .green) { withAnimation { deck.decide(.keep) } }
-        }
-    }
-
-    private func roundButton(_ symbol: String, _ color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(color)
-                .frame(width: 60, height: 60)
-                .background(Circle().fill(Color(.secondarySystemBackground)))
-        }
-    }
-
     private var deniedView: some View {
         ContentUnavailableView {
             Label("Photos access needed", systemImage: "photo.on.rectangle.angled")
+                .foregroundStyle(.white)
         } description: {
             Text("Allow full access to Photos in Settings so the app can find and delete photos.")
+                .foregroundStyle(.white.opacity(0.7))
         } actions: {
             Button("Open Settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
