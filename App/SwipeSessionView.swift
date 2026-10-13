@@ -19,7 +19,8 @@ struct SwipeSessionView: View {
 
     var body: some View {
         ZStack {
-            backgroundTint.ignoresSafeArea()
+            Theme.background.ignoresSafeArea()
+            radialTint.ignoresSafeArea()
             Group {
                 if deck.hasAccess { deckView }
                 else if deck.authorization == .notDetermined { ProgressView().tint(.white) }
@@ -27,7 +28,7 @@ struct SwipeSessionView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showReview) { ReviewView(deck: deck) }
+        .sheet(isPresented: $showReview) { ReviewView(deck: deck, onDone: reviewCompleted) }
         .sheet(item: $shareURL) { item in ShareSheet(items: [item.url]) }
         .sheet(isPresented: $showDatePicker) {
             datePickerSheet
@@ -35,20 +36,35 @@ struct SwipeSessionView: View {
         .fullScreenCover(item: $sessionResult) { result in
             SessionSummaryView(result: result, categoryTitle: kind.title, onBackToCategory: backToCategory, onReturnHome: returnHome)
         }
-        .task { await deck.start() }
-        .onChange(of: deck.history.count) { checkCompletion() }
+        .task { await deck.start(); checkFinished() }
+        .onChange(of: deck.history.count) { checkFinished() }
+        .onChange(of: deck.isLoading) { checkFinished() }
         .preferredColorScheme(.dark)
     }
 
-    private var backgroundTint: Color {
-        if dragAmount > 0 { return Theme.keepColor.opacity(Double(dragAmount) * 0.3) }
-        if dragAmount < 0 { return Theme.deleteColor.opacity(Double(-dragAmount) * 0.3) }
-        return Theme.background
+    private var radialTint: some View {
+        let progress = min(abs(dragAmount), 1)
+        let color = dragAmount >= 0 ? Theme.keepColor : Theme.deleteColor
+        return RadialGradient(
+            colors: [color.opacity(0.5 * Double(progress)), color.opacity(0)],
+            center: .bottom,
+            startRadius: 0,
+            endRadius: 120 + 760 * Double(progress)
+        )
+        .allowsHitTesting(false)
     }
 
-    /// R7: once the queue is exhausted *and* any pending deletions have been confirmed via Review, show the summary.
-    private func checkCompletion() {
-        guard deck.isFinished, deck.marked.isEmpty, sessionResult == nil else { return }
+    /// R7: once the queue is exhausted, pop open the Review screen — same screen reachable any time via the
+    /// "Review" tap below the card, just auto-triggered now instead of leaving the user on an idle "done" state.
+    private func checkFinished() {
+        guard deck.isFinished, !showReview, sessionResult == nil else { return }
+        showReview = true
+    }
+
+    /// Called once Review's bottom button completes (whether it deleted anything or not). Only surface the
+    /// summary if the whole session is actually finished — a mid-session Review-and-delete just returns to swiping.
+    private func reviewCompleted() {
+        guard deck.isFinished else { return }
         sessionResult = SessionResult(
             keptCount: deck.keptCount,
             deletedCount: deck.deletedCount,
@@ -77,20 +93,20 @@ struct SwipeSessionView: View {
                 Spacer(); ProgressView().tint(.white); Spacer()
             } else if let asset = deck.current {
                 ZStack {
-                    if let next = deck.next {
-                        AssetImage(asset: next, isFrontCard: false)
-                            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                            .scaleEffect(0.94)
-                            .opacity(0.5)
-                            .padding(.horizontal, 2)
-                    }
+                    directionIndicator(symbol: "hand.thumbsdown.fill", label: "DELETE", color: Theme.deleteColor,
+                                        opacity: Double(max(0, -dragAmount)), alignment: .trailing)
+                    directionIndicator(symbol: "hand.thumbsup.fill", label: "KEEP", color: Theme.keepColor,
+                                        opacity: Double(max(0, dragAmount)), alignment: .leading)
                     SwipeCard(asset: asset, onDecide: { decision in withAnimation { deck.decide(decision) } }, dragAmount: $dragAmount)
                         .id(asset.localIdentifier)
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                     actionStack(for: asset)
                 }
                 .padding(.horizontal, 2)
                 Spacer(minLength: 12)
                 keepDeleteRow
+                tallyBar
+                    .padding(.top, 10)
                 if !deck.marked.isEmpty {
                     Button { showReview = true } label: {
                         Label("Review \(deck.marked.count)", systemImage: "trash")
@@ -191,6 +207,45 @@ struct SwipeSessionView: View {
             }
         }
         .padding(.horizontal, 28)
+    }
+
+    private func directionIndicator(symbol: String, label: String, color: Color, opacity: Double, alignment: Alignment) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: symbol).font(.system(size: 56))
+            Text(label).font(.system(.title2, design: .rounded).weight(.heavy))
+        }
+        .foregroundStyle(color)
+        .opacity(opacity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+        .padding(.horizontal, 28)
+    }
+
+    private var tallyKept: Int { deck.keptCount }
+    private var tallyDeleted: Int { deck.marked.count + deck.deletedCount }
+
+    private var tallyBar: some View {
+        let kept = tallyKept
+        let deleted = tallyDeleted
+        let total = max(kept + deleted, 1)
+        return VStack(spacing: 6) {
+            HStack {
+                Text("\(deleted)").foregroundStyle(Theme.deleteColor)
+                Spacer()
+                Text("\(kept)").foregroundStyle(Theme.keepColor)
+            }
+            .font(.system(.caption, design: .rounded).weight(.bold))
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    Theme.deleteColor.frame(width: geo.size.width * CGFloat(deleted) / CGFloat(total))
+                    Theme.keepColor.frame(width: geo.size.width * CGFloat(kept) / CGFloat(total))
+                }
+            }
+            .frame(height: 6)
+            .clipShape(Capsule())
+            .background(Capsule().fill(.white.opacity(0.1)))
+        }
+        .padding(.horizontal, 28)
+        .animation(.easeOut(duration: 0.25), value: total)
     }
 
     private func actionStack(for asset: PHAsset) -> some View {

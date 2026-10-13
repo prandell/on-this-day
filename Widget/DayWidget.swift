@@ -51,23 +51,35 @@ struct DayWidgetView: View {
     let entry: DayEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Spacer()
             Text(entry.date.formatted(.dateTime.day().month(.abbreviated)).uppercased())
-                .font(.caption2.weight(.semibold))
+                .font(.system(.caption, design: .rounded).weight(.bold))
+                .foregroundStyle(.white.opacity(0.85))
             Text(headline)
-                .font(.headline)
+                .font(.system(.title3, design: .rounded).weight(.heavy))
+                .foregroundStyle(.white)
                 .lineLimit(2)
+                .minimumScaleFactor(0.7)
         }
-        .foregroundStyle(.white)
-        .shadow(radius: 3)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
         .containerBackground(for: .widget) {
-            if let image = entry.image {
-                Image(uiImage: image).resizable().scaledToFill()
-                    .overlay(LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .center, endPoint: .bottom))
-            } else {
-                LinearGradient(colors: [.indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+            ZStack {
+                if let image = entry.image {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    LinearGradient(colors: [Color(red: 0.31, green: 0.24, blue: 0.88), Color(red: 0.70, green: 0.31, blue: 0.88)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black.opacity(0.1), location: 0.45),
+                        .init(color: .black.opacity(0.82), location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
             }
         }
         .widgetURL(URL(string: "onthisday://today"))

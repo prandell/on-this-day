@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ReviewView: View {
     @ObservedObject var deck: SwipeSession
+    let onDone: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var deleting = false
     private let columns = [GridItem(.flexible(), spacing: 4), GridItem(.flexible(), spacing: 4), GridItem(.flexible(), spacing: 4)]
@@ -35,18 +36,26 @@ struct ReviewView: View {
                     Task {
                         let ok = await deck.deleteMarked()
                         deleting = false
-                        if ok { dismiss() }
+                        if ok {
+                            onDone()
+                            dismiss()
+                        }
                     }
                 } label: {
-                    Label("Delete \(deck.marked.count) Images", systemImage: "trash.fill")
-                        .font(.system(.body, design: .rounded).weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Theme.deleteColor.opacity(0.9), in: Capsule())
+                    Group {
+                        if deck.marked.isEmpty {
+                            Text("Continue")
+                        } else {
+                            Label("Delete \(deck.marked.count) Images", systemImage: "trash.fill")
+                        }
+                    }
+                    .font(.system(.body, design: .rounded).weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(Theme.deleteColor.opacity(0.9), in: Capsule())
                 }
-                .disabled(deck.marked.isEmpty || deleting)
-                .opacity(deck.marked.isEmpty ? 0.4 : 1)
+                .disabled(deleting)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
             }
