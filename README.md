@@ -1,28 +1,64 @@
-# On This Day
+# RollCull
 
-Swipe through photos taken on today's date in every past year. Right keeps, left marks for deletion, then review and delete in one go. Includes a Home Screen widget that shows today's count and a cover photo, and opens the app.
+**Clear out your camera roll one swipe at a time.**
 
-## Build
+RollCull turns cleaning up thousands of photos into something you'll actually do. Every day it gathers what you shot on this date in past years. You swipe right to keep and left to cull, then delete the lot in one go.
+
+## Features
+
+**Swipe to decide**
+- Right keeps, left marks for deletion. The card tints as you drag and shows a KEEP or DELETE stamp so you know which way it's going.
+- Undo whenever you change your mind. Nothing is deleted until you confirm.
+- Favourite, bookmark or share a photo straight from the card.
+- Videos autoplay and loop, with a 1x / 1.5x / 2x speed toggle.
+
+**Ways to work through your library**
+- **On This Day:** photos and videos from today's date in every earlier year.
+- **Recents:** your latest shots.
+- **Random:** a fresh mixed batch each day.
+- **By month:** every month you've got photos in, sorted newest or oldest first.
+- **Bookmarked:** the ones you set aside to decide on later.
+
+Each session picks up where you left off.
+
+**Review, then delete**
+- See everything you've marked in a grid first, and tap any photo to save it.
+- Deletion goes through iOS's own confirmation. Photos sit in Recently Deleted for 30 days.
+- After each session you get a summary of how much space you freed, plus your all-time total.
+
+**Home Screen widget**
+- Small and medium sizes show today's count over a photo from the day. Tap it to jump straight in.
+
+**Private by design**
+- Everything happens on your phone. No accounts, no servers, no analytics.
+- Photos you've already kept stay out of later sessions, unless you turn them back on in Settings.
+
+## Good to know
+
+- Deleting a photo removes it from iCloud Photos and from every synced device too.
+- If Optimise iPhone Storage is on, full-size images come down from iCloud, so the first card can take a moment.
+- 29 February only shows up in leap years.
+
+## Requirements
+
+iOS 17 or later, with Full Access to Photos.
+
+---
+
+## Building from source
 
 ```bash
 brew install xcodegen
-xcodegen            # generates OnThisDay.xcodeproj from project.yml
+xcodegen                 # generates OnThisDay.xcodeproj from project.yml
 open OnThisDay.xcodeproj
 ```
 
-1. In Xcode, Settings → Accounts, add your Apple ID (free is fine).
-2. Select each target (OnThisDay, OnThisDayWidget) → Signing & Capabilities → Team: your Personal Team. If the bundle ID is taken, change the `com.prandell` prefix in `project.yml` and re-run `xcodegen`.
-3. On the iPhone: Settings → Privacy & Security → Developer Mode → on.
-4. Plug in, pick the phone as the run destination, ⌘R.
-5. First launch: allow **Full Access** to Photos.
+Select your team under Signing & Capabilities for both targets, turn on Developer Mode on your phone, and run.
 
-## Free signing
+To make an installable `.ipa` (for SideStore or AltStore), save your Team ID to a `.team-id` file in the repo root and run:
 
-A free Personal Team build stops launching after 7 days. Re-run from Xcode, or install via SideStore/AltStore to re-sign it weekly over Wi-Fi. The widget extension uses an extra App ID (free accounts get 10 per 7 days).
+```bash
+./build-ipa.sh
+```
 
-## How it behaves
-
-- Pulls from iCloud when Optimise iPhone Storage is on, so the first few cards can take a second.
-- Photos you keep are remembered and hidden on later visits; toggle "Show photos I kept" in the menu.
-- Delete goes through iOS's own confirmation, lands in Recently Deleted for 30 days, and syncs to iCloud everywhere.
-- 29 Feb only matches leap years.
+A free Apple ID works. Builds signed with a free Personal Team expire after 7 days, so you'll need to re-run from Xcode, or let SideStore or AltStore refresh it for you. If the bundle ID is taken, change the `bundleIdPrefix` in `project.yml`.
