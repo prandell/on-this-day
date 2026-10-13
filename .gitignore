@@ -3,3 +3,6 @@ xcuserdata/
 DerivedData/
 .DS_Store
 build/
+.team-id
+App/Info.plist
+Widget/Info.plist
