@@ -15,10 +15,10 @@ enum Theme {
     )
 
     /// The app's wordmark, styled consistently wherever it appears (Home header, loading screen).
-    /// Noteworthy is a built-in iOS font with bubbly, rolled-looking letterforms — no font bundling needed.
+    /// Rubik Black Italic, bundled as a static instance of the variable font (see App/Fonts).
     static func wordmark(size: CGFloat = 30) -> some View {
         Text(appName)
-            .font(.custom("Noteworthy-Bold", size: size))
+            .font(.custom("Rubik-BlackItalic", size: size))
             .foregroundStyle(brandGradient)
     }
 

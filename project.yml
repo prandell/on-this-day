@@ -21,6 +21,7 @@ targets:
         CFBundleDisplayName: RollCull
         UILaunchScreen:
           UIColorName: LaunchBackground
+        UIAppFonts: [Rubik-BlackItalic.ttf]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSPhotoLibraryUsageDescription: Shows photos taken on this date in past years so you can keep or delete them.
         CFBundleURLTypes:

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RollCull Wordmark Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&family=Poppins:ital,wght@1,900&family=Nunito:ital,wght@1,900&family=Grandstander:wght@800&family=Rubik:ital,wght@1,900&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --indigo: #4f3ce0;
+    --purple: #b24fe0;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding-block: 48px; }
+  h1 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sp-muted);
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  p.sub {
+    color: var(--sp-muted);
+    font-size: 14px;
+    margin: 0 0 36px;
+    line-height: 1.5;
+    max-width: 65ch;
+  }
+  .grid { display: grid; gap: 14px; }
+  .card {
+    background: var(--sp-surface);
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mark {
+    font-size: clamp(38px, 9vw, 58px);
+    line-height: 1.1;
+    background: linear-gradient(90deg, var(--indigo), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    width: fit-content;
+  }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .name { font-size: 13px; color: var(--sp-muted); letter-spacing: 0.03em; }
+  .note { font-size: 12px; color: var(--sp-muted); opacity: 0.7; font-style: italic; }
+  .f-baloo { font-family: "Baloo 2", sans-serif; font-weight: 800; }
+  .f-fredoka { font-family: "Fredoka", sans-serif; font-weight: 700; }
+  .f-poppins { font-family: "Poppins", sans-serif; font-weight: 900; font-style: italic; }
+  .f-nunito { font-family: "Nunito", sans-serif; font-weight: 900; font-style: italic; }
+  .f-grandstander { font-family: "Grandstander", sans-serif; font-weight: 800; }
+  .f-rubik { font-family: "Rubik", sans-serif; font-weight: 900; font-style: italic; }
+  .f-comfortaa { font-family: "Comfortaa", sans-serif; font-weight: 700; }
+</style>
+</head>
+<body class="dark">
+<main class="wrap">
+  <h1>Wordmark options</h1>
+  <p class="sub">Bold, rounded candidates closer to swipewipe's chunky italic sans, with varying amounts of curve — from barely-rounded corners to fully bubbly letterforms. All shown at the app's actual brand gradient.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="mark f-poppins">RollCull</div>
+      <div class="meta"><span class="name">Poppins Black Italic</span><span class="note">closest to swipewipe — geometric, chunky, barely curved</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-rubik">RollCull</div>
+      <div class="meta"><span class="name">Rubik Black Italic</span><span class="note">same family as swipewipe's slant, softer corners</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-nunito">RollCull</div>
+      <div class="meta"><span class="name">Nunito Black Italic</span><span class="note">rounder terminals, still reads bold and fast</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-baloo">RollCull</div>
+      <div class="meta"><span class="name">Baloo 2 ExtraBold</span><span class="note">noticeably curvier, upright not italic</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-fredoka">RollCull</div>
+      <div class="meta"><span class="name">Fredoka Bold</span><span class="note">fully rounded, bubbly — most playful of the set</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-grandstander">RollCull</div>
+      <div class="meta"><span class="name">Grandstander ExtraBold</span><span class="note">bouncy, slightly irregular, lots of personality</span></div>
+    </div>
+
+    <div class="card">
+      <div class="mark f-comfortaa">RollCull</div>
+      <div class="meta"><span class="name">Comfortaa Bold</span><span class="note">softest/roundest geometric option, least like swipewipe</span></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
