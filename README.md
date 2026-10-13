@@ -1,49 +1,25 @@
 # RollCull
 
-**Clear out your camera roll one swipe at a time.**
+**The entire app is a spinning sausage.**
 
-RollCull turns cleaning up thousands of photos into something you'll actually do. Every day it gathers what you shot on this date in past years. You swipe right to keep and left to cull, then delete the lot in one go.
+Open RollCull and behold a sausage, rotating forever. Tap the sausage to pause or resume.
 
 ## Features
 
-**Swipe to decide**
-- Right keeps, left marks for deletion. The card tints as you drag and shows a KEEP or DELETE stamp so you know which way it's going.
-- Undo whenever you change your mind. Nothing is deleted until you confirm.
-- Favourite, bookmark or share a photo straight from the card.
-- Videos autoplay and loop, with a 1x / 1.5x / 2x speed toggle.
+- A full-screen sausage drawn with SwiftUI, with no image downloads.
+- Continuous rotation while the app is active; animation pauses when it leaves the foreground.
+- Tap to pause or resume, with an accessible control for VoiceOver.
+- Reduce Motion keeps the sausage still.
+- Small and medium Home Screen widgets show the same sausage. Tap either widget to open the app.
+- No Photos permission, photo-library reads, accounts, servers, or analytics in the sausage experience.
 
-**Ways to work through your library**
-- **On This Day:** photos and videos from today's date in every earlier year.
-- **Recents:** your latest shots.
-- **Random:** a fresh mixed batch each day.
-- **By month:** every month you've got photos in, sorted newest or oldest first.
-- **Bookmarked:** the ones you set aside to decide on later.
+The widget is a still image: [WidgetKit limits animations to two seconds](https://developer.apple.com/documentation/widgetkit/animating-data-updates-in-widgets-and-live-activities). The app is where the sausage spins.
 
-Each session picks up where you left off.
-
-**Review, then delete**
-- See everything you've marked in a grid first, and tap any photo to save it.
-- Deletion goes through iOS's own confirmation. Photos sit in Recently Deleted for 30 days.
-- After each session you get a summary of how much space you freed, plus your all-time total.
-
-**Home Screen widget**
-- Small and medium sizes show today's count over a photo from the day. Tap it to jump straight in.
-
-**Private by design**
-- Everything happens on your phone. No accounts, no servers, no analytics.
-- Photos you've already kept stay out of later sessions, unless you turn them back on in Settings.
-
-## Good to know
-
-- Deleting a photo removes it from iCloud Photos and from every synced device too.
-- If Optimise iPhone Storage is on, full-size images come down from iCloud, so the first card can take a moment.
-- 29 February only shows up in leap years.
+The previous photo-review screens remain in the source tree but are no longer reachable from the app or its widget links.
 
 ## Requirements
 
-iOS 17 or later, with Full Access to Photos.
-
----
+iOS 17 or later. Building requires a Mac with the full Xcode application installed.
 
 ## Building from source
 
@@ -53,12 +29,29 @@ xcodegen                 # generates OnThisDay.xcodeproj from project.yml
 open OnThisDay.xcodeproj
 ```
 
-Select your team under Signing & Capabilities for both targets, turn on Developer Mode on your phone, and run.
+Run the `OnThisDay` scheme in an iPhone simulator. To run on a phone, select your team under Signing & Capabilities for both targets, enable Developer Mode on your phone, and run.
 
-To make an installable `.ipa` (for SideStore or AltStore), save your Team ID to a `.team-id` file in the repo root and run:
+An unsigned simulator build can also be made from the command line:
+
+```bash
+xcodegen
+xcodebuild -project OnThisDay.xcodeproj -scheme OnThisDay \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+```
+
+To make an installable `.ipa` for SideStore or AltStore, save your Team ID to a `.team-id` file in the repo root and run:
 
 ```bash
 ./build-ipa.sh
 ```
 
-A free Apple ID works. Builds signed with a free Personal Team expire after 7 days, so you'll need to re-run from Xcode, or let SideStore or AltStore refresh it for you. If the bundle ID is taken, change the `bundleIdPrefix` in `project.yml`.
+If either bundle ID is taken, change the app and widget `PRODUCT_BUNDLE_IDENTIFIER` values in `project.yml` before generating the project.
+
+## Manual checks
+
+- Launch the app and confirm the sausage spins without a Photos permission prompt.
+- Tap to pause, tap again to resume, and repeat with VoiceOver enabled.
+- Background and reopen the app; confirm rotation resumes unless it was manually paused.
+- Enable Reduce Motion in Settings > Accessibility > Motion; confirm the sausage stays still.
+- Add small and medium widgets; confirm their sausages fit and tapping either opens the sausage screen.
+- Open `onthisday://today`; confirm it also opens the sausage screen.
