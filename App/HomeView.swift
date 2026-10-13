@@ -5,8 +5,10 @@ struct HomeView: View {
     @Binding var path: [SessionKind]
     @State private var authorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     @State private var rows: [Row] = []
+    @State private var rowsLoaded = false
     @State private var showKept = SwipeSession.showKept
-    @State private var showMenu = false
+    @State private var monthsNewestFirst = SwipeSession.monthsNewestFirst
+    @State private var showSettings = false
 
     private struct Row: Identifiable {
         let id: String
@@ -22,7 +24,7 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 header
                 Group {
-                    if hasAccess {
+                    if hasAccess && rowsLoaded {
                         ScrollView {
                             VStack(spacing: 0) {
                                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
@@ -33,10 +35,8 @@ struct HomeView: View {
                                 }
                             }
                         }
-                    } else if authorization == .notDetermined {
-                        Spacer()
-                        ProgressView().tint(.white)
-                        Spacer()
+                    } else if hasAccess || authorization == .notDetermined {
+                        LoadingView()
                     } else {
                         Spacer()
                         deniedView
@@ -52,6 +52,9 @@ struct HomeView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .fullScreenCover(isPresented: $showSettings) {
+            SettingsView(monthsNewestFirst: $monthsNewestFirst, showKept: $showKept)
+        }
         .task {
             if authorization == .notDetermined {
                 authorization = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
@@ -62,28 +65,27 @@ struct HomeView: View {
             SwipeSession.showKept = showKept
             if hasAccess { Task { await loadRows() } }
         }
+        .onChange(of: monthsNewestFirst) {
+            SwipeSession.monthsNewestFirst = monthsNewestFirst
+            if hasAccess { Task { await loadRows() } }
+        }
     }
 
     private var header: some View {
         HStack {
-            Text("On This Day")
-                .font(.system(.title, design: .rounded).weight(.heavy).italic())
-                .foregroundStyle(.black)
+            Theme.wordmark()
             Spacer()
-            Button { showMenu = true } label: {
+            Button { showSettings = true } label: {
                 Image(systemName: "line.3.horizontal.decrease.circle.fill")
                     .font(.title2)
                     .foregroundStyle(.black.opacity(0.7))
-            }
-            .confirmationDialog("Options", isPresented: $showMenu, titleVisibility: .hidden) {
-                Button(showKept ? "Hide photos I kept" : "Show photos I kept") { showKept.toggle() }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity)
-        .background(Color(red: 0.94, green: 0.80, blue: 0.70))
+        .background(Theme.headerBackground)
     }
 
     private func rowContent(_ row: Row, index: Int) -> some View {
@@ -157,6 +159,7 @@ struct HomeView: View {
 
     private func loadRows() async {
         rows = await Task.detached(priority: .userInitiated) { Self.computeRows() }.value
+        rowsLoaded = true
     }
 
     private nonisolated static func computeRows() -> [Row] {
@@ -170,7 +173,9 @@ struct HomeView: View {
             Row(id: "random", kind: .random(.now), count: LibraryQueries.random(day: .now).count, isMonth: false),
             Row(id: "bookmarked", kind: .bookmarked, count: LibraryQueries.assets(forIdentifiers: Array(SwipeSession.bookmarked)).count, isMonth: false),
         ]
-        for month in LibraryQueries.monthsWithPhotos() {
+        var months = LibraryQueries.monthsWithPhotos()
+        if !SwipeSession.monthsNewestFirst { months.reverse() }
+        for month in months {
             rows.append(Row(id: "month-\(month.timeIntervalSince1970)", kind: .month(month), count: LibraryQueries.month(month).count, isMonth: true))
         }
         return rows

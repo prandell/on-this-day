@@ -18,8 +18,9 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: On This Day
-        UILaunchScreen: {}
+        CFBundleDisplayName: RollCull
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSPhotoLibraryUsageDescription: Shows photos taken on this date in past years so you can keep or delete them.
         CFBundleURLTypes:
@@ -38,7 +39,7 @@ targets:
     info:
       path: Widget/Info.plist
       properties:
-        CFBundleDisplayName: On This Day
+        CFBundleDisplayName: RollCull
         NSPhotoLibraryUsageDescription: Shows a photo taken on this date in past years.
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension

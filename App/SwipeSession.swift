@@ -65,6 +65,12 @@ final class SwipeSession: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: showKeptKey) }
     }
 
+    private nonisolated static let monthsNewestFirstKey = "monthsNewestFirst"
+    nonisolated static var monthsNewestFirst: Bool {
+        get { UserDefaults.standard.object(forKey: monthsNewestFirstKey) == nil ? true : UserDefaults.standard.bool(forKey: monthsNewestFirstKey) }
+        set { UserDefaults.standard.set(newValue, forKey: monthsNewestFirstKey) }
+    }
+
     nonisolated static var bookmarked: Set<String> {
         get { Set(UserDefaults.standard.stringArray(forKey: bookmarkedKey) ?? []) }
         set { UserDefaults.standard.set(Array(newValue), forKey: bookmarkedKey) }

@@ -3,8 +3,24 @@ import SwiftUI
 /// Visual language for the swipewipe-style redesign: near-black swipe/home screens, a warm dark-brown
 /// summary screen, candy-gradient category rows, and a lavender/mint delete/keep color pair throughout.
 enum Theme {
+    static let appName = "RollCull"
     static let background = Color.black
     static let summaryBackground = Color(red: 0.16, green: 0.13, blue: 0.12)
+    static let headerBackground = Color(red: 0.94, green: 0.80, blue: 0.70)
+    static let panelBackground = Color(red: 0.90, green: 0.74, blue: 0.62)
+
+    static let brandGradient = LinearGradient(
+        colors: [Color(red: 0.31, green: 0.24, blue: 0.88), Color(red: 0.70, green: 0.31, blue: 0.88)],
+        startPoint: .leading, endPoint: .trailing
+    )
+
+    /// The app's wordmark, styled consistently wherever it appears (Home header, loading screen).
+    /// Noteworthy is a built-in iOS font with bubbly, rolled-looking letterforms — no font bundling needed.
+    static func wordmark(size: CGFloat = 30) -> some View {
+        Text(appName)
+            .font(.custom("Noteworthy-Bold", size: size))
+            .foregroundStyle(brandGradient)
+    }
 
     static let deleteColor = Color(red: 0.62, green: 0.57, blue: 0.98) // lavender
     static let keepColor = Color(red: 0.48, green: 1.0, blue: 0.70)   // mint green
