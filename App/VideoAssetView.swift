@@ -69,9 +69,12 @@ final class VideoPlaybackController: ObservableObject {
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            newPlayer.seek(to: .zero)
-            if self.isFrontCard { newPlayer.play() }
+            // `queue: .main` guarantees this runs on the main thread, matching SwipeSession's MainActor isolation.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                newPlayer.seek(to: .zero)
+                if self.isFrontCard { newPlayer.play() }
+            }
         }
         apply()
     }
