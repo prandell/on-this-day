@@ -61,6 +61,41 @@ enum LibraryQueries {
         return months
     }
 
+    /// Assets that look like duplicates of another asset: same pixel dimensions, same duration (0 for
+    /// photos), and creation timestamps within a second of each other. PhotoKit has no public API for
+    /// Apple's own Duplicates album, so this reimplements the common case — a photo saved/imported twice.
+    /// Returned grouped (most-recent group first, newest-in-group first) so matching pairs sit next to
+    /// each other when swiping.
+    static func duplicates() -> [PHAsset] {
+        struct Key: Hashable {
+            let width: Int
+            let height: Int
+            let duration: Int
+            let timestamp: Int
+        }
+
+        let options = PHFetchOptions()
+        options.predicate = mediaTypePredicate
+        let all = PHAsset.fetchAssets(with: options)
+
+        var groups: [Key: [PHAsset]] = [:]
+        all.enumerateObjects { asset, _, _ in
+            guard let created = asset.creationDate else { return }
+            let key = Key(
+                width: asset.pixelWidth,
+                height: asset.pixelHeight,
+                duration: Int(asset.duration.rounded()),
+                timestamp: Int(created.timeIntervalSinceReferenceDate.rounded())
+            )
+            groups[key, default: []].append(asset)
+        }
+
+        return groups.values
+            .filter { $0.count > 1 }
+            .sorted { ($0.first?.creationDate ?? .distantPast) > ($1.first?.creationDate ?? .distantPast) }
+            .flatMap { $0.sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) } }
+    }
+
     /// Fetches assets by local identifier, preserving no particular order (callers sort as needed).
     static func assets(forIdentifiers identifiers: [String]) -> [PHAsset] {
         guard !identifiers.isEmpty else { return [] }

@@ -96,10 +96,11 @@ struct HomeView: View {
                 .minimumScaleFactor(0.6)
             Spacer()
             rowIcon(row)
+                .frame(width: 54, height: 54)
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
-        .frame(height: 140)
+        .frame(height: 108)
         .foregroundStyle(row.isMonth ? Theme.monthRowColors[index % Theme.monthRowColors.count].text : .white)
         .background(rowBackground(row, index: index))
     }
@@ -119,6 +120,7 @@ struct HomeView: View {
         case .recents: return Theme.categoryGradients[1]
         case .random: return Theme.categoryGradients[2]
         case .bookmarked: return Theme.categoryGradients[3]
+        case .duplicates: return Theme.categoryGradients[4]
         case .month: return Theme.categoryGradients[0]
         }
     }
@@ -152,6 +154,22 @@ struct HomeView: View {
             Image(systemName: "bookmark.fill")
                 .font(.title.weight(.bold))
                 .foregroundStyle(.white)
+        case .duplicates:
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "square.on.square.fill")
+                    .font(.title)
+                    .foregroundStyle(Color.red.opacity(0.85))
+                    .padding(10)
+                    .background(Circle().fill(.white))
+                if row.count > 0 {
+                    Text("\(min(row.count, 99))")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(5)
+                        .background(Circle().fill(.red))
+                        .offset(x: 4, y: -4)
+                }
+            }
         case .month:
             EmptyView()
         }
@@ -172,6 +190,7 @@ struct HomeView: View {
             Row(id: "recents", kind: .recents, count: LibraryQueries.recents().count, isMonth: false),
             Row(id: "random", kind: .random(.now), count: LibraryQueries.random(day: .now).count, isMonth: false),
             Row(id: "bookmarked", kind: .bookmarked, count: LibraryQueries.assets(forIdentifiers: Array(SwipeSession.bookmarked)).count, isMonth: false),
+            Row(id: "duplicates", kind: .duplicates, count: LibraryQueries.duplicates().count, isMonth: false),
         ]
         var months = LibraryQueries.monthsWithPhotos()
         if !SwipeSession.monthsNewestFirst { months.reverse() }

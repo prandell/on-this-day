@@ -27,7 +27,7 @@ enum Theme {
 
     static let roundedFont = Font.system(.body, design: .rounded)
 
-    /// Gradient category rows, in display order: on this day, recents, random, bookmarked.
+    /// Gradient category rows, in display order: on this day, recents, random, bookmarked, duplicates.
     static let categoryGradients: [LinearGradient] = [
         LinearGradient(colors: [Color(red: 0.90, green: 0.69, blue: 0.47), Color(red: 0.60, green: 0.33, blue: 0.69)],
                         startPoint: .leading, endPoint: .trailing),
@@ -36,6 +36,8 @@ enum Theme {
         LinearGradient(colors: [Color(red: 0.49, green: 0.22, blue: 0.93), Color(red: 0.68, green: 0.76, blue: 0.98)],
                         startPoint: .leading, endPoint: .trailing),
         LinearGradient(colors: [Color(red: 0.95, green: 0.70, blue: 0.30), Color(red: 0.98, green: 0.52, blue: 0.36)],
+                        startPoint: .leading, endPoint: .trailing),
+        LinearGradient(colors: [Color(red: 0.95, green: 0.38, blue: 0.38), Color(red: 0.62, green: 0.20, blue: 0.55)],
                         startPoint: .leading, endPoint: .trailing),
     ]
 

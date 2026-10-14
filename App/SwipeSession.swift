@@ -9,6 +9,7 @@ enum SessionKind: Hashable {
     case random(Date)
     case month(Date)
     case bookmarked
+    case duplicates
 
     var storageKey: String {
         switch self {
@@ -17,6 +18,7 @@ enum SessionKind: Hashable {
         case .random(let date): return "random-\(Self.dayFormatter.string(from: date))"
         case .month(let date): return "month-\(Self.monthFormatter.string(from: date))"
         case .bookmarked: return "bookmarked"
+        case .duplicates: return "duplicates"
         }
     }
 
@@ -27,6 +29,7 @@ enum SessionKind: Hashable {
         case .random: return "Random"
         case .month(let date): return Self.monthTitleFormatter.string(from: date).uppercased()
         case .bookmarked: return "Bookmarked"
+        case .duplicates: return "Duplicates"
         }
     }
 
@@ -98,7 +101,7 @@ final class SwipeSession: ObservableObject {
             switch kind {
             case .onThisDay(let date): return date
             case .random(let date): return date
-            case .recents, .month, .bookmarked: return .now
+            case .recents, .month, .bookmarked, .duplicates: return .now
             }
         }
         set { changeDate(to: newValue) }
@@ -291,6 +294,7 @@ final class SwipeSession: ObservableObject {
         case .bookmarked:
             return LibraryQueries.assets(forIdentifiers: Array(bookmarked))
                 .sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
+        case .duplicates: return LibraryQueries.duplicates()
         }
     }
 }
